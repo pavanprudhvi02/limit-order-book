@@ -32,6 +32,7 @@ jobs:
           mkdir -p _site
           cp web/index.html web/app.js web/style.css _site/
           cp build-wasm/orderbook.mjs build-wasm/orderbook.wasm _site/
+          sed -i "s/__VERSION__/${GITHUB_SHA::8}/g" _site/index.html _site/app.js
           ls -la _site
       - uses: actions/upload-pages-artifact@v3
         with:

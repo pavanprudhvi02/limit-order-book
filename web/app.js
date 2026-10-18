@@ -1,10 +1,11 @@
-import createOrderBook from './orderbook.mjs';
+import createOrderBook from './orderbook.mjs?v=__VERSION__';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('en-US');
 const TAPE_LIMIT = 60;
 
-const Module = await createOrderBook();
+// Version stamp keeps browsers from pairing a cached module with a newer page.
+const Module = await createOrderBook({ locateFile: (file) => `${file}?v=__VERSION__` });
 const session = new Module.Session();
 
 function render(result) {
