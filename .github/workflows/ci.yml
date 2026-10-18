@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build, test, replay and benchmark
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build -j"$(nproc)"
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+      - name: Replay the sample order file
+        run: build/lob_replay data/sample_orders.csv
+      - name: Benchmark
+        run: build/lob_bench --ops 1000000 | tee -a "$GITHUB_STEP_SUMMARY"
+
+  sanitizers:
+    name: Tests under ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: AddressSanitizer + UBSan
+            flags: -DLOB_SANITIZE=ON
+          - name: ThreadSanitizer
+            flags: -DLOB_TSAN=ON
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug ${{ matrix.flags }}
+      - name: Build
+        run: cmake --build build -j"$(nproc)" --target lob_tests
+      - name: Test
+        env:
+          TSAN_OPTIONS: halt_on_error=1
+        run: ctest --test-dir build --output-on-failure
+
+  valgrind:
+    name: Valgrind memcheck and Cachegrind
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Valgrind
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends valgrind
+      - name: Build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          cmake --build build -j"$(nproc)"
+      - name: Memcheck (no leaks, no invalid reads or writes)
+        run: |
+          valgrind --error-exitcode=1 --leak-check=full --errors-for-leak-kinds=definite \
+            build/lob_tests --gtest_filter='OrderBook*:MemoryPool*:Seeds/ReferenceTest.*/0:MatchingEngine*'
+      - name: Cachegrind profile of the book
+        run: |
+          valgrind --tool=cachegrind --cache-sim=yes --cachegrind-out-file=cachegrind.out \
+            build/lob_bench --ops 200000 --skip-pipeline 2>&1 | tee cachegrind.txt
+          {
+            echo '### Cachegrind summary'
+            echo '```'
+            grep -E 'refs|miss rate' cachegrind.txt
+            echo '```'
+            echo '### Hottest functions'
+            echo '```'
+            cg_annotate cachegrind.out | sed -n '/file:function/,/^$/p' | head -25
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cachegrind
+          path: cachegrind.out
