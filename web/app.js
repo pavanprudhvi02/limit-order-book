@@ -115,7 +115,12 @@ $('example-btn').addEventListener('click', () => {
     ['BUY', 10096, 45], ['BUY', 10095, 30],
   ];
   let last;
-  for (const [side, price, qty] of orders) last = JSON.parse(session.submit(side, 'LIMIT', price, qty));
+  try {
+    for (const [side, price, qty] of orders) last = JSON.parse(session.submit(side, 'LIMIT', price, qty));
+  } catch (err) {
+    addTape({ type: 'note', text: `Error: ${err.message}` });
+    return;
+  }
   render({ ...last, events: [] });
   addTape({ type: 'note', text: 'Loaded 12 resting orders (#1–#12). Try a buy at 10102 for 70 to sweep two levels.' });
   document.querySelector('#order-form [name=price]').value = 10102;

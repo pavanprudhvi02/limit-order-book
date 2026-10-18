@@ -28,27 +28,28 @@ class Session {
   }
 
   // side: "BUY"/"SELL"; type: "LIMIT"/"MARKET"/"IOC"/"FOK".
-  std::string Submit(const std::string& side, const std::string& type, long long price, unsigned quantity) {
+  // Numbers arrive from JavaScript as doubles; ids and prices here are small integers.
+  std::string Submit(const std::string& side, const std::string& type, double price, double quantity) {
     events_.clear();
     OrderType t = OrderType::kLimit;
     if (type == "MARKET") t = OrderType::kMarket;
     else if (type == "IOC") t = OrderType::kIoc;
     else if (type == "FOK") t = OrderType::kFok;
     OrderId id = next_id_++;
-    book_->Submit(id, side == "SELL" ? Side::kSell : Side::kBuy, t, price, quantity);
+    book_->Submit(id, side == "SELL" ? Side::kSell : Side::kBuy, t, static_cast<Price>(price), ToQty(quantity));
     return Result(id);
   }
 
-  std::string Cancel(unsigned long long id) {
+  std::string Cancel(double id) {
     events_.clear();
-    book_->Cancel(id);
-    return Result(id);
+    book_->Cancel(static_cast<OrderId>(id));
+    return Result(static_cast<OrderId>(id));
   }
 
-  std::string Modify(unsigned long long id, long long price, unsigned quantity) {
+  std::string Modify(double id, double price, double quantity) {
     events_.clear();
-    book_->Modify(id, price, quantity);
-    return Result(id);
+    book_->Modify(static_cast<OrderId>(id), static_cast<Price>(price), ToQty(quantity));
+    return Result(static_cast<OrderId>(id));
   }
 
   // Pushes `count` synthetic orders through the book as fast as possible and
@@ -130,6 +131,8 @@ class Session {
     };
     return l;
   }
+
+  static Quantity ToQty(double q) { return q <= 0 ? 0 : q > 4e9 ? 4000000000u : static_cast<Quantity>(q); }
 
   Price Mid() const {
     auto bid = book_->BestBid(), ask = book_->BestAsk();
