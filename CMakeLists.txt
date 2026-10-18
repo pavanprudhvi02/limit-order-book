@@ -34,6 +34,16 @@ add_library(lob src/order_book.cc src/engine.cc)
 target_include_directories(lob PUBLIC include)
 target_link_libraries(lob PUBLIC Threads::Threads)
 
+if(EMSCRIPTEN)
+  # Browser demo: only the single-threaded book is compiled to WebAssembly.
+  add_executable(lob_wasm web/bindings.cc src/order_book.cc)
+  target_include_directories(lob_wasm PRIVATE include web)
+  target_link_options(lob_wasm PRIVATE -lembind -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=createOrderBook
+    -sALLOW_MEMORY_GROWTH=1 -sENVIRONMENT=web)
+  set_target_properties(lob_wasm PROPERTIES OUTPUT_NAME orderbook SUFFIX ".mjs")
+  return()
+endif()
+
 add_executable(lob_bench bench/lob_bench.cc)
 target_link_libraries(lob_bench PRIVATE lob)
 
@@ -55,6 +65,7 @@ if(LOB_BUILD_TESTS)
     tests/reference_test.cc
     tests/primitives_test.cc
     tests/engine_test.cc
+    tests/web_session_test.cc
   )
   target_link_libraries(lob_tests PRIVATE lob GTest::gtest_main)
   include(GoogleTest)

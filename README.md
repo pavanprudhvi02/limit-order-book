@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/pavanprudhvi02/limit-order-book/actions/workflows/ci.yml/badge.svg)](https://github.com/pavanprudhvi02/limit-order-book/actions/workflows/ci.yml)
 
+**Live demo: [pavanprudhvi02.github.io/limit-order-book](https://pavanprudhvi02.github.io/limit-order-book/)**. The book is compiled to WebAssembly, so you can place orders, sweep levels and run a 200,000-order simulation in the browser.
+
 A price-time priority matching engine for a single instrument, in C++20. It supports limit, market, immediate-or-cancel and fill-or-kill orders, plus cancel and modify. Orders come from a pre-allocated memory pool, and the engine runs on its own thread, fed and drained through lock-free single-producer/single-consumer ring buffers.
 
 Originally built for my Spring 2025 coursework at the University of Florida; this repository is a clean rebuild.
@@ -109,6 +111,7 @@ src/           book and engine implementation
 tests/         GoogleTest suites, including the reference matcher
 bench/         lob_bench
 tools/         lob_replay
+web/           browser demo (WebAssembly bindings and page), built and deployed by the Live demo workflow
 data/          sample order file
 ```
 

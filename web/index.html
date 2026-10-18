@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Limit Order Book · Live Demo</title>
+  <meta name="description" content="A C++20 price-time priority matching engine compiled to WebAssembly. Place orders and watch them match.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <div>
+        <p class="eyebrow">Live demo · C++20 → WebAssembly</p>
+        <h1>Limit Order Book Matching Engine</h1>
+        <p class="lede">Every order you place here is matched by the same C++ order book that the test suite checks: price-time priority, trades at the resting price, limit, market, IOC and fill-or-kill. It runs entirely in your browser.</p>
+      </div>
+      <nav class="links">
+        <a href="https://github.com/pavanprudhvi02/limit-order-book" target="_blank" rel="noopener">Source on GitHub ↗</a>
+        <a href="https://pavanprudhvi02.github.io/" target="_blank" rel="noopener">Pavan Prudhvi Madhamsetty ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap grid" id="app" aria-busy="true">
+    <section class="panel entry" aria-labelledby="entry-h">
+      <h2 id="entry-h">Place an order</h2>
+      <form id="order-form" autocomplete="off">
+        <div class="seg" role="radiogroup" aria-label="Side">
+          <label><input type="radio" name="side" value="BUY" checked><span>Buy</span></label>
+          <label><input type="radio" name="side" value="SELL"><span>Sell</span></label>
+        </div>
+        <label class="field">Type
+          <select name="type">
+            <option value="LIMIT">Limit</option>
+            <option value="MARKET">Market</option>
+            <option value="IOC">Immediate or cancel</option>
+            <option value="FOK">Fill or kill</option>
+          </select>
+        </label>
+        <div class="row2">
+          <label class="field">Price (ticks)<input name="price" type="number" min="1" step="1" value="10000" required></label>
+          <label class="field">Quantity<input name="qty" type="number" min="1" step="1" value="10" required></label>
+        </div>
+        <button type="submit" class="btn primary" id="submit-btn">Submit order</button>
+      </form>
+      <p class="hint">Tip: click a price in the book to use it.</p>
+
+      <h3>Cancel or modify</h3>
+      <form id="manage-form" autocomplete="off">
+        <div class="row3">
+          <label class="field">Order id<input name="id" type="number" min="1" step="1" required></label>
+          <label class="field">New price<input name="price" type="number" min="1" step="1"></label>
+          <label class="field">New qty<input name="qty" type="number" min="0" step="1"></label>
+        </div>
+        <div class="row2">
+          <button type="button" class="btn" id="cancel-btn">Cancel</button>
+          <button type="button" class="btn" id="modify-btn">Modify</button>
+        </div>
+      </form>
+      <p class="hint">Shrinking an order at the same price keeps its place in the queue. A new price or a bigger size sends it to the back.</p>
+
+      <h3>Scenarios</h3>
+      <div class="stack">
+        <button class="btn" id="example-btn">Load an example book</button>
+        <button class="btn" data-sim="10000">Simulate 10,000 orders</button>
+        <button class="btn" data-sim="200000">Simulate 200,000 orders</button>
+        <button class="btn ghost" id="reset-btn">Reset</button>
+      </div>
+    </section>
+
+    <section class="panel book" aria-labelledby="book-h">
+      <div class="panel-head">
+        <h2 id="book-h">Order book</h2>
+        <span class="spread" id="spread">no quotes</span>
+      </div>
+      <div class="ladder-head"><span>Price</span><span>Quantity</span><span>Orders</span></div>
+      <div class="ladder" id="asks"></div>
+      <div class="mid" id="mid">Place an order or load the example book</div>
+      <div class="ladder" id="bids"></div>
+    </section>
+
+    <section class="panel side" aria-labelledby="tape-h">
+      <h2>Engine</h2>
+      <dl class="stats">
+        <div><dt>Resting orders</dt><dd id="st-orders">0</dd></div>
+        <div><dt>Trades so far</dt><dd id="st-trades">0</dd></div>
+        <div><dt>Memory pool</dt><dd id="st-pool">0</dd></div>
+        <div><dt>Last simulation</dt><dd id="st-sim">not run yet</dd></div>
+      </dl>
+      <h2 id="tape-h">Event tape</h2>
+      <ol class="tape" id="tape" aria-live="polite"></ol>
+    </section>
+  </main>
+
+  <footer class="wrap foot">
+    <p>Prices are integer ticks. Simulated flow is a random-walk mid price with limit orders, cancels, market orders and modifies, generated by the same code the benchmark uses. Speeds shown are measured in your browser, which runs WebAssembly more slowly than a native build.</p>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

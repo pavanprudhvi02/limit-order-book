@@ -1,0 +1,48 @@
+name: Live demo
+
+# Builds the order book to WebAssembly and publishes the web demo to GitHub Pages.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.74
+      - name: Build WebAssembly module
+        run: |
+          emcmake cmake -S . -B build-wasm -DCMAKE_BUILD_TYPE=Release -DLOB_BUILD_TESTS=OFF
+          cmake --build build-wasm --target lob_wasm -j"$(nproc)"
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp web/index.html web/app.js web/style.css _site/
+          cp build-wasm/orderbook.mjs build-wasm/orderbook.wasm _site/
+          ls -la _site
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
