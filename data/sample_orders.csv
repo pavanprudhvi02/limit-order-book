@@ -1,0 +1,18 @@
+# Build a book on both sides
+N,1,SELL,LIMIT,10100,50
+N,2,SELL,LIMIT,10100,30
+N,3,SELL,LIMIT,10200,40
+N,4,BUY,LIMIT,10000,60
+N,5,BUY,LIMIT,9900,25
+# Aggressive buy: takes order 1 then part of order 2 (time priority), rests nothing
+N,6,BUY,LIMIT,10100,65
+# Shrink order 4 in place (keeps its place), then reprice order 5 (goes to the back)
+M,4,10000,40
+M,5,10000,25
+# Market sell sweeps the bids
+N,7,SELL,MARKET,0,50
+# Fill-or-kill that cannot fill, then an IOC that partly fills
+N,8,BUY,FOK,10200,100
+N,9,BUY,IOC,10100,30
+C,3
+C,42
